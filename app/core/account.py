@@ -54,6 +54,7 @@ class Account:
         cookie_value: Optional[str] = None,
         oauth_token: Optional[OAuthToken] = None,
         auth_type: AuthType = AuthType.COOKIE_ONLY,
+        proxy_url: Optional[str] = None,
     ):
         self.organization_uuid = organization_uuid
         self.capabilities = capabilities
@@ -63,6 +64,7 @@ class Account:
         self.last_used = datetime.now()
         self.resets_at: Optional[datetime] = None
         self.oauth_token: Optional[OAuthToken] = oauth_token
+        self.proxy_url = proxy_url
 
     def __enter__(self) -> "Account":
         """Enter the context manager."""
@@ -102,6 +104,7 @@ class Account:
             "last_used": self.last_used.isoformat(),
             "resets_at": self.resets_at.isoformat() if self.resets_at else None,
             "oauth_token": self.oauth_token.to_dict() if self.oauth_token else None,
+            "proxy_url": self.proxy_url,
         }
 
     @classmethod
@@ -112,6 +115,7 @@ class Account:
             capabilities=data.get("capabilities"),
             cookie_value=data.get("cookie_value"),
             auth_type=AuthType(data["auth_type"]),
+            proxy_url=data.get("proxy_url"),
         )
         account.status = AccountStatus(data["status"])
         account.last_used = datetime.fromisoformat(data["last_used"])

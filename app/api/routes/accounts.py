@@ -22,6 +22,7 @@ class AccountCreate(BaseModel):
     oauth_token: Optional[OAuthTokenCreate] = None
     organization_uuid: Optional[UUID] = None
     capabilities: Optional[List[str]] = None
+    proxy_url: Optional[str] = None
 
 
 class AccountUpdate(BaseModel):
@@ -29,6 +30,7 @@ class AccountUpdate(BaseModel):
     oauth_token: Optional[OAuthTokenCreate] = None
     capabilities: Optional[List[str]] = None
     status: Optional[AccountStatus] = None
+    proxy_url: Optional[str] = None
 
 
 class OAuthCodeExchange(BaseModel):
@@ -36,6 +38,7 @@ class OAuthCodeExchange(BaseModel):
     code: str
     pkce_verifier: str
     capabilities: Optional[List[str]] = None
+    proxy_url: Optional[str] = None
 
 
 class AccountResponse(BaseModel):
@@ -49,6 +52,7 @@ class AccountResponse(BaseModel):
     has_oauth: bool
     last_used: str
     resets_at: Optional[str] = None
+    proxy_url: Optional[str] = None
 
 
 router = APIRouter()
@@ -74,6 +78,7 @@ async def list_accounts(_: AdminAuthDep):
                 has_oauth=account.oauth_token is not None,
                 last_used=account.last_used.isoformat(),
                 resets_at=account.resets_at.isoformat() if account.resets_at else None,
+                proxy_url=account.proxy_url,
             )
         )
 
@@ -101,6 +106,7 @@ async def get_account(organization_uuid: str, _: AdminAuthDep):
         has_oauth=account.oauth_token is not None,
         last_used=account.last_used.isoformat(),
         resets_at=account.resets_at.isoformat() if account.resets_at else None,
+        proxy_url=account.proxy_url,
     )
 
 
@@ -120,6 +126,7 @@ async def create_account(account_data: AccountCreate, _: AdminAuthDep):
         oauth_token=oauth_token,
         organization_uuid=str(account_data.organization_uuid),
         capabilities=account_data.capabilities,
+        proxy_url=account_data.proxy_url,
     )
 
     return AccountResponse(
@@ -135,6 +142,7 @@ async def create_account(account_data: AccountCreate, _: AdminAuthDep):
         has_oauth=account.oauth_token is not None,
         last_used=account.last_used.isoformat(),
         resets_at=account.resets_at.isoformat() if account.resets_at else None,
+        proxy_url=account.proxy_url,
     )
 
 
@@ -182,6 +190,9 @@ async def update_account(
         if account.status == AccountStatus.VALID:
             account.resets_at = None
 
+    if account_data.proxy_url is not None:
+        account.proxy_url = account_data.proxy_url
+
     # Save changes
     account_manager.save_accounts()
 
@@ -198,6 +209,7 @@ async def update_account(
         has_oauth=account.oauth_token is not None,
         last_used=account.last_used.isoformat(),
         resets_at=account.resets_at.isoformat() if account.resets_at else None,
+        proxy_url=account.proxy_url,
     )
 
 
@@ -235,6 +247,7 @@ async def exchange_oauth_code(exchange_data: OAuthCodeExchange, _: AdminAuthDep)
         oauth_token=oauth_token,
         organization_uuid=str(exchange_data.organization_uuid),
         capabilities=exchange_data.capabilities,
+        proxy_url=exchange_data.proxy_url,
     )
 
     return AccountResponse(
@@ -248,4 +261,5 @@ async def exchange_oauth_code(exchange_data: OAuthCodeExchange, _: AdminAuthDep)
         has_oauth=True,
         last_used=account.last_used.isoformat(),
         resets_at=account.resets_at.isoformat() if account.resets_at else None,
+        proxy_url=account.proxy_url,
     )

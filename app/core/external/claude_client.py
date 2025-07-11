@@ -32,10 +32,12 @@ class ClaudeWebClient:
 
     async def initialize(self):
         """Initialize the client session."""
+        # Use account-specific proxy if configured, otherwise fall back to global proxy
+        proxy_url = self.account.proxy_url or settings.proxy_url
         self.session = create_session(
             timeout=settings.request_timeout,
             impersonate="chrome",
-            proxy=settings.proxy_url,
+            proxy=proxy_url,
             follow_redirects=False,
         )
 
