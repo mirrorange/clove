@@ -13,6 +13,7 @@ import json
 
 from app.core.config import settings
 from app.utils.retry import log_before_sleep
+from app.utils.proxy import parse_proxy_url, validate_proxy_url, get_curl_proxy_url, get_httpx_proxy_url
 
 # Try to import curl_cffi, fall back to httpx if not available
 try:
@@ -176,6 +177,16 @@ if CURL_CFFI_AVAILABLE:
             if not CURL_CFFI_AVAILABLE:
                 raise ImportError("curl_cffi is not installed")
 
+            # Parse and validate proxy URL
+            if proxy:
+                parsed_proxy = get_curl_proxy_url(proxy)
+                is_valid, error_msg = validate_proxy_url(parsed_proxy)
+                if not is_valid:
+                    logger.error(f"Invalid proxy URL: {error_msg}")
+                    raise ValueError(f"Invalid proxy URL: {error_msg}")
+                proxy = parsed_proxy
+                logger.debug(f"Using proxy: {proxy}")
+
             self._session = CurlAsyncSession(
                 timeout=timeout,
                 impersonate=impersonate,
@@ -279,6 +290,20 @@ if HTTPX_AVAILABLE:
             if not HTTPX_AVAILABLE:
                 raise ImportError("httpx is not installed")
 
+            # Parse and validate proxy URL
+            if proxy:
+                parsed_proxy = get_httpx_proxy_url(proxy)
+                is_valid, error_msg = validate_proxy_url(parsed_proxy)
+                if not is_valid:
+                    logger.error(f"Invalid proxy URL: {error_msg}")
+                    raise ValueError(f"Invalid proxy URL: {error_msg}")
+                proxy = parsed_proxy
+                logger.debug(f"Using proxy: {proxy}")
+                
+                # Warn if SOCKS5 is used with httpx
+                if proxy.startswith('socks5://'):
+                    logger.warning("SOCKS5 proxy is not natively supported by httpx. Consider using curl_cffi or installing httpx-socks.")
+
             # Create a custom SSL context that doesn't verify certificates
             # Note: This should only be used for development/testing with trusted proxies
             import ssl
@@ -370,32 +395,32 @@ if HTTPX_AVAILABLE:
         async def close(self):
             await self._client.aclose()
 
-    def create_session(
-        timeout: int = settings.request_timeout,
-        impersonate: str = "chrome",
-        proxy: Optional[str] = settings.proxy_url,
-        follow_redirects: bool = True,
-    ) -> AsyncSession:
-        """Create an async session using the available HTTP client.
+def create_session(
+    timeout: int = settings.request_timeout,
+    impersonate: str = "chrome",
+    proxy: Optional[str] = settings.proxy_url,
+    follow_redirects: bool = True,
+) -> AsyncSession:
+    """Create an async session using the available HTTP client.
 
-        Prefers curl_cffi if available, falls back to httpx.
-        """
-        if CURL_CFFI_AVAILABLE:
-            logger.debug("Using curl_cffi as HTTP client")
-            return CurlAsyncSessionWrapper(
-                timeout=timeout,
-                impersonate=impersonate,
-                proxy=proxy,
-                follow_redirects=follow_redirects,
-            )
-        else:
-            logger.debug("Using httpx as HTTP client (curl_cffi not available)")
-            return HttpxAsyncSession(
-                timeout=timeout,
-                impersonate=impersonate,
-                proxy=proxy,
-                follow_redirects=follow_redirects,
-            )
+    Prefers curl_cffi if available, falls back to httpx.
+    """
+    if CURL_CFFI_AVAILABLE:
+        logger.debug("Using curl_cffi as HTTP client")
+        return CurlAsyncSessionWrapper(
+            timeout=timeout,
+            impersonate=impersonate,
+            proxy=proxy,
+            follow_redirects=follow_redirects,
+        )
+    else:
+        logger.debug("Using httpx as HTTP client (curl_cffi not available)")
+        return HttpxAsyncSession(
+            timeout=timeout,
+            impersonate=impersonate,
+            proxy=proxy,
+            follow_redirects=follow_redirects,
+        )
 
 
 async def download_image(url: str, timeout: int = 30) -> Tuple[bytes, str]:
