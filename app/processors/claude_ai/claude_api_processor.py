@@ -73,8 +73,12 @@ class ClaudeAPIProcessor(BaseProcessor):
                 request_json = self._prepare_request_json(context)
                 headers = self._prepare_headers(account.oauth_token.access_token)
 
+                # Use account-specific proxy if configured, otherwise fall back to global proxy
+                proxy_url = account.proxy_url or settings.proxy_url
+                logger.info(f"[PROXY] ClaudeAPIProcessor using proxy: {proxy_url if proxy_url else 'None'} for org: {account.organization_uuid}")
+                
                 session = create_session(
-                    proxy=settings.proxy_url,
+                    proxy=proxy_url,
                     timeout=settings.request_timeout,
                     impersonate="chrome",
                     follow_redirects=False,

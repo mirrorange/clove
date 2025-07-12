@@ -179,13 +179,16 @@ if CURL_CFFI_AVAILABLE:
 
             # Parse and validate proxy URL
             if proxy:
+                logger.info(f"[PROXY] Configuring proxy for curl_cffi: {proxy}")
                 parsed_proxy = get_curl_proxy_url(proxy)
                 is_valid, error_msg = validate_proxy_url(parsed_proxy)
                 if not is_valid:
                     logger.error(f"Invalid proxy URL: {error_msg}")
                     raise ValueError(f"Invalid proxy URL: {error_msg}")
                 proxy = parsed_proxy
-                logger.debug(f"Using proxy: {proxy}")
+                logger.info(f"[PROXY] Parsed proxy URL for curl_cffi: {proxy}")
+            else:
+                logger.info("[PROXY] No proxy configured for curl_cffi session")
 
             self._session = CurlAsyncSession(
                 timeout=timeout,
@@ -246,6 +249,7 @@ if CURL_CFFI_AVAILABLE:
             **kwargs,
         ) -> Response:
             logger.debug(f"Making {method} request to {url}")
+            logger.debug(f"[PROXY] Request through curl_cffi using proxy: {self._session.proxy if hasattr(self._session, 'proxy') else 'No proxy'}")
 
             # Handle file uploads - convert files parameter to multipart
             files = kwargs.pop("files", None)
@@ -292,17 +296,20 @@ if HTTPX_AVAILABLE:
 
             # Parse and validate proxy URL
             if proxy:
+                logger.info(f"[PROXY] Configuring proxy for httpx: {proxy}")
                 parsed_proxy = get_httpx_proxy_url(proxy)
                 is_valid, error_msg = validate_proxy_url(parsed_proxy)
                 if not is_valid:
                     logger.error(f"Invalid proxy URL: {error_msg}")
                     raise ValueError(f"Invalid proxy URL: {error_msg}")
                 proxy = parsed_proxy
-                logger.debug(f"Using proxy: {proxy}")
+                logger.info(f"[PROXY] Parsed proxy URL for httpx: {proxy}")
                 
                 # Warn if SOCKS5 is used with httpx
                 if proxy.startswith('socks5://'):
                     logger.warning("SOCKS5 proxy is not natively supported by httpx. Consider using curl_cffi or installing httpx-socks.")
+            else:
+                logger.info("[PROXY] No proxy configured for httpx session")
 
             # Create a custom SSL context that doesn't verify certificates
             # Note: This should only be used for development/testing with trusted proxies
@@ -371,6 +378,7 @@ if HTTPX_AVAILABLE:
             **kwargs,
         ) -> Response:
             logger.debug(f"Making {method} request to {url}")
+            logger.debug(f"[PROXY] Request through httpx using proxy: {self._client.proxy if hasattr(self._client, 'proxy') else 'No proxy'}")
             if stream:
                 response = await self.stream(
                     method=method,

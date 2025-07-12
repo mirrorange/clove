@@ -34,6 +34,10 @@ class ClaudeWebClient:
         """Initialize the client session."""
         # Use account-specific proxy if configured, otherwise fall back to global proxy
         proxy_url = self.account.proxy_url or settings.proxy_url
+        logger.info(f"[PROXY] Initializing ClaudeWebClient for org {self.account.organization_uuid}")
+        logger.info(f"[PROXY] Account proxy: {self.account.proxy_url if self.account.proxy_url else 'None'}")
+        logger.info(f"[PROXY] Global proxy: {settings.proxy_url if settings.proxy_url else 'None'}")
+        logger.info(f"[PROXY] Final proxy URL: {proxy_url if proxy_url else 'None'}")
         self.session = create_session(
             timeout=settings.request_timeout,
             impersonate="chrome",
@@ -140,6 +144,7 @@ class ClaudeWebClient:
             "name": "Hello World!",
             "uuid": str(uuid),
         }
+        logger.info(f"[PROXY] Creating conversation via {url}")
         response = await self._request("POST", url, json=payload)
 
         data = response.json()
@@ -182,6 +187,7 @@ class ClaudeWebClient:
             "Accept": "text/event-stream",
         }
 
+        logger.info(f"[PROXY] Sending message to {url}")
         response = await self._request(
             "POST", url, conv_uuid=conv_uuid, json=payload, headers=headers, stream=True
         )
