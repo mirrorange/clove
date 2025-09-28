@@ -100,7 +100,7 @@ class TokenCounterProcessor(BaseProcessor):
         if not context.messages_api_request:
             return 0
 
-        merged_text, _ = await process_messages(
+        merged_text, _, _ = await process_messages(
             context.messages_api_request.messages, context.messages_api_request.system
         )
 
@@ -114,7 +114,7 @@ class TokenCounterProcessor(BaseProcessor):
         if not context.collected_message:
             return 0
 
-        merged_text, _ = await process_messages([context.collected_message])
+        merged_text, _, _ = await process_messages([context.collected_message])
 
         tokens = len(encoder.encode(merged_text))
 

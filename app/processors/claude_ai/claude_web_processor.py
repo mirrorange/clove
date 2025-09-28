@@ -61,7 +61,7 @@ class ClaudeWebProcessor(BaseProcessor):
             if not request.messages:
                 raise NoValidMessagesError()
 
-            merged_text, images = await process_messages(
+            merged_text, images, documents = await process_messages(
                 request.messages, request.system
             )
             if not merged_text:

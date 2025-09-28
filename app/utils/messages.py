@@ -7,22 +7,26 @@ from app.core.config import settings
 from app.core.exceptions import ExternalImageDownloadError, ExternalImageNotAllowedError
 from app.models.claude import (
     ImageType,
+    DocumentType,
     InputMessage,
     Role,
     ServerToolUseContent,
     TextContent,
     ImageContent,
+    DocumentContent,
     ThinkingContent,
     ToolResultContent,
     ToolUseContent,
     URLImageSource,
+    URLDocumentSource,
     Base64ImageSource,
+    Base64DocumentSource,
 )
 
 
 async def process_messages(
     messages: List[InputMessage], system: Optional[str | List[TextContent]] = None
-) -> Tuple[str, List[Base64ImageSource]]:
+) -> Tuple[str, List[Base64ImageSource], List[Base64DocumentSource]]:
     if isinstance(system, str):
         merged_text = system
     elif system:
@@ -38,6 +42,7 @@ async def process_messages(
         assistant_prefix = f"{settings.assistant_name}: "
 
     images: List[Base64ImageSource] = []
+    documents: List[Base64DocumentSource] = []
     current_role = Role.USER
 
     for message in messages:
@@ -97,11 +102,20 @@ async def process_messages(
                         image_source = await extract_image_from_url(block.source.url)
                         if image_source:
                             images.append(image_source)
+                elif isinstance(block, DocumentContent):
+                    if isinstance(block.source, Base64DocumentSource):
+                        documents.append(block.source)
+                        merged_text += "(document attached)\n"
+                    elif isinstance(block.source, URLDocumentSource):
+                        document_source = await extract_document_from_url(block.source.url)
+                        if document_source:
+                            documents.append(document_source)
+                            merged_text += "(document attached)\n"
 
         if merged_text.endswith("\n"):
             merged_text = merged_text[:-1]
 
-    return (merged_text, images)
+    return (merged_text, images, documents)
 
 
 async def extract_image_from_url(url: str) -> Optional[Base64ImageSource]:
@@ -143,4 +157,48 @@ async def extract_image_from_url(url: str) -> Optional[Base64ImageSource]:
         raise ExternalImageNotAllowedError(url)
     else:
         logger.warning(f"Unsupported URL format: {url}, Skipping image.")
+        return None
+
+
+async def extract_document_from_url(url: str) -> Optional[Base64DocumentSource]:
+    """Extract base64 document from data URL or download from external URL."""
+
+    if url.startswith("data:"):
+        try:
+            metadata, base64_data = url.split(",", 1)
+            media_info = metadata[5:]
+            media_type, encoding = media_info.split(";", 1)
+
+            return Base64DocumentSource(
+                type=encoding, media_type=DocumentType(media_type), data=base64_data
+            )
+        except Exception:
+            logger.warning("Failed to extract document from data URL. Skipping document.")
+            return None
+
+    elif settings.allow_external_images and (
+        url.startswith("http://") or url.startswith("https://")
+    ):
+        try:
+            logger.debug(f"Downloading external document: {url}")
+
+            content, content_type = await download_image(
+                url, timeout=settings.request_timeout
+            )
+            base64_data = base64.b64encode(content).decode("utf-8")
+
+            return Base64DocumentSource(
+                type="base64", media_type=DocumentType(content_type), data=base64_data
+            )
+        except Exception:
+            logger.warning(f"Failed to download document from {url}")
+            return None
+
+    elif not settings.allow_external_images and (
+        url.startswith("http://") or url.startswith("https://")
+    ):
+        logger.warning(f"External document downloads not allowed: {url}")
+        return None
+    else:
+        logger.warning(f"Unsupported URL format: {url}, Skipping document.")
         return None

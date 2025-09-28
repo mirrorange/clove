@@ -15,6 +15,10 @@ class ImageType(str, Enum):
     WEBP = "image/webp"
 
 
+class DocumentType(str, Enum):
+    PDF = "application/pdf"
+
+
 # Image sources
 class Base64ImageSource(BaseModel):
     type: Literal["base64"] = "base64"
@@ -30,6 +34,23 @@ class URLImageSource(BaseModel):
 class FileImageSource(BaseModel):
     type: Literal["file"] = "file"
     file_uuid: str = Field(..., description="UUID of the uploaded file")
+
+
+# Document sources
+class Base64DocumentSource(BaseModel):
+    type: Literal["base64"] = "base64"
+    media_type: DocumentType = Field(..., description="MIME type of the document")
+    data: str = Field(..., description="Base64 encoded document data")
+
+
+class URLDocumentSource(BaseModel):
+    type: Literal["url"] = "url"
+    url: str = Field(..., description="URL of the document")
+
+
+class FileDocumentSource(BaseModel):
+    type: Literal["file"] = "file"
+    file_uuid: str = Field(..., description="UUID of the uploaded document")
 
 
 # Web search result
@@ -59,6 +80,13 @@ class ImageContent(BaseModel):
     model_config = ConfigDict(extra="allow")
     type: Literal["image"]
     source: Base64ImageSource | URLImageSource | FileImageSource
+    cache_control: Optional[CacheControl] = None
+
+
+class DocumentContent(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    type: Literal["document"]
+    source: Base64DocumentSource | URLDocumentSource | FileDocumentSource
     cache_control: Optional[CacheControl] = None
 
 
@@ -106,6 +134,7 @@ class WebSearchToolResultContent(BaseModel):
 ContentBlock = Union[
     TextContent,
     ImageContent,
+    DocumentContent,
     ThinkingContent,
     ToolUseContent,
     ToolResultContent,
