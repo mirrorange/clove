@@ -44,7 +44,7 @@ curl = [
     "curl-cffi>=0.11.4",
 ]
 rnet = [
-    "rnet>=2.3.9",
+    "rnet>=3.0.0rc14",
 ]
 dev = [
     "build>=1.0.0",
