@@ -143,7 +143,7 @@ if RNET_AVAILABLE:
 
         @property
         def status_code(self) -> int:
-            return self._response.status
+            return self._response.status.as_int()
 
         async def json(self) -> Any:
             return await self._response.json()
@@ -151,7 +151,7 @@ if RNET_AVAILABLE:
         @property
         def headers(self) -> Dict[str, str]:
             headers_dict = {}
-            for key, value in self._response.headers.items():
+            for key, value in self._response.headers:
                 key_str = key.decode("utf-8") if isinstance(key, bytes) else key
                 value_str = value.decode("utf-8") if isinstance(value, bytes) else value
                 headers_dict[key_str] = value_str
@@ -307,17 +307,17 @@ if RNET_AVAILABLE:
             proxy: Optional[str] = settings.proxy_url,
             follow_redirects: bool = True,
         ):
-            # Map impersonate string to rnet Impersonate enum
-            impersonate_map = {
-                "chrome": rnet.Impersonate.Chrome136,
-                "firefox": rnet.Impersonate.Firefox136,
-                "safari": rnet.Impersonate.Safari18,
-                "edge": rnet.Impersonate.Edge134,
+            # Map impersonate string to rnet Emulation enum
+            emulation_map = {
+                "chrome": rnet.Emulation.Chrome142,
+                "firefox": rnet.Emulation.Firefox136,
+                "safari": rnet.Emulation.Safari18,
+                "edge": rnet.Emulation.Edge134,
             }
 
             # Use Chrome as default if not found in map
-            rnet_impersonate = impersonate_map.get(
-                impersonate.lower(), rnet.Impersonate.Chrome136
+            rnet_emulation = emulation_map.get(
+                impersonate.lower(), rnet.Emulation.Chrome142
             )
 
             # Create proxy list if proxy is provided
@@ -326,8 +326,8 @@ if RNET_AVAILABLE:
                 proxies = [rnet.Proxy.all(proxy)]
 
             self._client = RnetClient(
-                impersonate=rnet_impersonate,
-                connect_timeout=timeout,
+                emulation=rnet_emulation,
+                timeout=timeout,
                 proxies=proxies,
                 allow_redirects=follow_redirects,
             )
