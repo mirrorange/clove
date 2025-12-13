@@ -49,12 +49,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY app/ ./app/
 COPY README.md ./
 
-# Step 3: Install the project itself
+# Step 3: Copy frontend build artifacts (required by pyproject.toml force-include)
+COPY --from=frontend-builder /app/front/dist ./app/static
+
+# Step 4: Install the project itself
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --extra rnet --extra curl
-
-# Copy frontend build artifacts
-COPY --from=frontend-builder /app/front/dist ./app/static
 
 # Create data directory
 RUN mkdir -p /data
