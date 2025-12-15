@@ -41,7 +41,7 @@ dmypy.json
 .pyre/
 .pytype/
 .ruff_cache/
-uv.lock
+# uv.lock 需要保留（uv 构建需要）
 
 # Virtual environments
 .env
@@ -161,9 +161,6 @@ Makefile
 scripts/
 
 # Python packaging files
-pyproject.toml
-requirements*.txt
-!requirements.txt
 MANIFEST.in
 setup.py
 setup.cfg
