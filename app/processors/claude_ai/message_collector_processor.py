@@ -14,6 +14,7 @@ from app.models.streaming import (
     MessageDeltaEvent,
     MessageStopEvent,
     ErrorEvent,
+    ErrorInfo,
     TextDelta,
     InputJsonDelta,
     ThinkingDelta,
@@ -94,21 +95,29 @@ class MessageCollectorProcessor(BaseProcessor):
                     )
 
             elif isinstance(event.root, ContentBlockStopEvent):
-                block = context.collected_message.content[event.root.index]
-                if isinstance(block, (ToolUseContent, ServerToolUseContent)):
-                    if hasattr(block, "input_json") and block.input_json:
-                        block.input = json5.loads(block.input_json)
-                        del block.input_json
-                if isinstance(block, ToolResultContent):
-                    if hasattr(block, "content_json") and block.content_json:
-                        block = ToolResultContent(
-                            **block.model_dump(exclude={"content"}),
-                            content=json5.loads(block.content_json),
-                        )
-                        del block.content_json
-                        context.collected_message.content[event.root.index] = block
-
-                logger.debug(f"Content block {event.root.index} stopped")
+                # Boundary checking to prevent IndexError caused by refusal responses
+                if (
+                    context.collected_message
+                    and event.root.index < len(context.collected_message.content)
+                ):
+                    block = context.collected_message.content[event.root.index]
+                    if isinstance(block, (ToolUseContent, ServerToolUseContent)):
+                        if hasattr(block, "input_json") and block.input_json:
+                            block.input = json5.loads(block.input_json)
+                            del block.input_json
+                    if isinstance(block, ToolResultContent):
+                        if hasattr(block, "content_json") and block.content_json:
+                            block = ToolResultContent(
+                                **block.model_dump(exclude={"content"}),
+                                content=json5.loads(block.content_json),
+                            )
+                            del block.content_json
+                            context.collected_message.content[event.root.index] = block
+                    logger.debug(f"Content block {event.root.index} stopped")
+                else:
+                    logger.debug(
+                        f"Content block {event.root.index} stop skipped (no corresponding start)"
+                    )
 
             elif isinstance(event.root, MessageDeltaEvent):
                 if context.collected_message and event.root.delta:
@@ -116,6 +125,22 @@ class MessageCollectorProcessor(BaseProcessor):
                         context.collected_message.stop_reason = (
                             event.root.delta.stop_reason
                         )
+                        # When refusal is detected and content is empty, yield ErrorEvent
+                        if (
+                            event.root.delta.stop_reason == "refusal"
+                            and not context.collected_message.content
+                        ):
+                            logger.warning("Request refused by Claude's safety filter")
+                            error_event = StreamingEvent(
+                                root=ErrorEvent(
+                                    type="error",
+                                    error=ErrorInfo(
+                                        type="refusal",
+                                        message="Chat paused: Claude's safety filters flagged this message. This occasionally happens with normal, safe messages. Try rephrasing or using a different model."
+                                    )
+                                )
+                            )
+                            yield error_event
                     if event.root.delta.stop_sequence:
                         context.collected_message.stop_sequence = (
                             event.root.delta.stop_sequence
