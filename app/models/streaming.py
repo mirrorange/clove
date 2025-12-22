@@ -41,7 +41,7 @@ Delta = Union[TextDelta, InputJsonDelta, ThinkingDelta, SignatureDelta]
 class MessageDeltaData(BaseModel):
     model_config = ConfigDict(extra="allow")
     stop_reason: Optional[
-        Literal["end_turn", "max_tokens", "stop_sequence", "tool_use"]
+        Literal["end_turn", "max_tokens", "stop_sequence", "tool_use", "pause_turn", "refusal"]
     ] = None
     stop_sequence: Optional[str] = None
 
