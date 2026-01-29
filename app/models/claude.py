@@ -1,5 +1,5 @@
 from typing import Optional, List, Union, Literal, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from enum import Enum
 
 
@@ -169,6 +169,18 @@ class MessagesAPIRequest(BaseModel):
     thinking: Optional[ThinkingOptions] = None
     tool_choice: Optional[ToolChoice] = None
     tools: Optional[List[Tool]] = None
+
+    @model_validator(mode="after")
+    def validate_thinking_tokens(self) -> "MessagesAPIRequest":
+        """Ensure max_tokens > thinking.budget_tokens when thinking is enabled."""
+        if (
+            self.thinking
+            and self.thinking.type == "enabled"
+            and self.thinking.budget_tokens is not None
+            and self.max_tokens <= self.thinking.budget_tokens
+        ):
+            self.max_tokens = self.thinking.budget_tokens + 1
+        return self
 
 
 class Message(BaseModel):
