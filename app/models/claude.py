@@ -140,6 +140,21 @@ class Tool(BaseModel):
     description: Optional[str] = None
 
 
+class OutputConfig(BaseModel):
+    """Output configuration for effort parameter (effort-2025-11-24 beta)."""
+
+    model_config = ConfigDict(extra="ignore")
+    effort: Optional[Literal["low", "medium", "high"]] = None
+
+
+class OutputFormat(BaseModel):
+    """Output format for structured outputs (structured-outputs-2025-11-13 beta)."""
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True, serialize_by_alias=True)
+    type: Literal["json_schema"]
+    schema_: Optional[Dict[str, Any]] = Field(default=None, alias="schema")
+
+
 class ServerToolUsage(BaseModel):
     model_config = ConfigDict(extra="allow")
     web_search_requests: Optional[int] = None
@@ -169,6 +184,8 @@ class MessagesAPIRequest(BaseModel):
     thinking: Optional[ThinkingOptions] = None
     tool_choice: Optional[ToolChoice] = None
     tools: Optional[List[Tool]] = None
+    output_config: Optional[OutputConfig] = None
+    output_format: Optional[OutputFormat] = None
 
     @model_validator(mode="after")
     def validate_thinking_tokens(self) -> "MessagesAPIRequest":

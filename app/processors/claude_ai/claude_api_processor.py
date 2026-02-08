@@ -8,7 +8,7 @@ from typing import Dict
 from loguru import logger
 from fastapi.responses import StreamingResponse
 
-from app.models.claude import TextContent
+from app.models.claude import MessagesAPIRequest, TextContent
 from app.processors.base import BaseProcessor
 from app.processors.claude_ai import ClaudeAIContext
 from app.services.account import account_manager
@@ -92,7 +92,10 @@ class ClaudeAPIProcessor(BaseProcessor):
                 request_json = context.messages_api_request.model_dump_json(
                     exclude_none=True
                 )
-                headers = self._prepare_headers(account.oauth_token.access_token)
+                headers = self._prepare_headers(
+                    account.oauth_token.access_token,
+                    context.messages_api_request,
+                )
 
                 session = create_session(
                     proxy=settings.proxy_url,
@@ -212,11 +215,23 @@ class ClaudeAPIProcessor(BaseProcessor):
         else:
             request.system = [system_message]
 
-    def _prepare_headers(self, access_token: str) -> Dict[str, str]:
+    def _prepare_headers(
+        self, access_token: str, request: MessagesAPIRequest
+    ) -> Dict[str, str]:
         """Prepare headers for Claude API request."""
+        beta_features = ["oauth-2025-04-20"]
+
+        # Add effort beta header if output_config is present
+        if request.output_config:
+            beta_features.append("effort-2025-11-24")
+
+        # Add structured outputs beta header if output_format is present
+        if request.output_format:
+            beta_features.append("structured-outputs-2025-11-13")
+
         return {
             "Authorization": f"Bearer {access_token}",
-            "anthropic-beta": "oauth-2025-04-20",
+            "anthropic-beta": ",".join(beta_features),
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
         }
