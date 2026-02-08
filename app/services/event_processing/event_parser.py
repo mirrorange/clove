@@ -37,6 +37,7 @@ class EventParser:
             StreamingEvent objects parsed from the stream
         """
         async for chunk in stream:
+            chunk = chunk.replace('\r\n', '\n') # Normalize line endings
             self.buffer += chunk
 
             async for event in self._process_buffer():
