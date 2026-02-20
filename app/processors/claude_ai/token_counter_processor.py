@@ -104,7 +104,11 @@ class TokenCounterProcessor(BaseProcessor):
             context.messages_api_request.messages, context.messages_api_request.system
         )
 
-        tokens = len(encoder.encode(merged_text))
+        try:
+            tokens = len(encoder.encode(merged_text, disallowed_special=()))
+        except Exception:
+            logger.warning("Tiktoken encoding failed for input, falling back to estimation")
+            tokens = len(merged_text) // 4
 
         logger.debug(f"Calculated {tokens} input tokens")
         return tokens
@@ -116,7 +120,11 @@ class TokenCounterProcessor(BaseProcessor):
 
         merged_text, _ = await process_messages([context.collected_message])
 
-        tokens = len(encoder.encode(merged_text))
+        try:
+            tokens = len(encoder.encode(merged_text, disallowed_special=()))
+        except Exception:
+            logger.warning("Tiktoken encoding failed for output, falling back to estimation")
+            tokens = len(merged_text) // 4
 
         logger.debug(f"Calculated {tokens} output tokens")
         return tokens
