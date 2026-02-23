@@ -68,6 +68,13 @@ class ThinkingContent(BaseModel):
     thinking: str
 
 
+# redacted_thinking 块：API 可能返回被审查的思考内容
+class RedactedThinkingContent(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    type: Literal["redacted_thinking"]
+    data: str
+
+
 class ToolUseContent(BaseModel):
     model_config = ConfigDict(extra="allow")
     type: Literal["tool_use"]
@@ -107,6 +114,7 @@ ContentBlock = Union[
     TextContent,
     ImageContent,
     ThinkingContent,
+    RedactedThinkingContent,
     ToolUseContent,
     ToolResultContent,
     ServerToolUseContent,
@@ -122,7 +130,7 @@ class InputMessage(BaseModel):
 
 class ThinkingOptions(BaseModel):
     model_config = ConfigDict(extra="allow")
-    type: Literal["enabled", "disabled"] = "disabled"
+    type: Literal["enabled", "disabled", "adaptive"] = "disabled"
     budget_tokens: Optional[int] = None
 
 
@@ -141,14 +149,14 @@ class Tool(BaseModel):
 
 
 class OutputConfig(BaseModel):
-    """Output configuration for effort parameter (effort-2025-11-24 beta)."""
+    """Output configuration (effort, format, etc). effort and structured outputs are now GA."""
 
-    model_config = ConfigDict(extra="ignore")
-    effort: Optional[Literal["low", "medium", "high"]] = None
+    model_config = ConfigDict(extra="allow")
+    effort: Optional[Literal["low", "medium", "high", "max"]] = None
 
 
 class OutputFormat(BaseModel):
-    """Output format for structured outputs (structured-outputs-2025-11-13 beta)."""
+    """Output format for structured outputs (deprecated, use output_config.format instead)."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True, serialize_by_alias=True)
     type: Literal["json_schema"]
@@ -175,7 +183,7 @@ class MessagesAPIRequest(BaseModel):
     messages: List[InputMessage]
     max_tokens: int = Field(default=8192, ge=1)
     system: Optional[str | List[TextContent]] = None
-    temperature: Optional[float] = Field(default=1.0, ge=0, le=1)
+    temperature: Optional[float] = Field(default=None, ge=0, le=1)
     top_p: Optional[float] = Field(default=None, ge=0, le=1)
     top_k: Optional[int] = Field(default=None, ge=0)
     stop_sequences: Optional[List[str]] = None
