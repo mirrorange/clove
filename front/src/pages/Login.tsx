@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { KeyRound, Loader2 } from 'lucide-react'
 import { statisticsApi } from '../api/client'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export function Login() {
+    const { t } = useTranslation()
     const [adminKey, setAdminKey] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
@@ -20,16 +22,16 @@ export function Login() {
         setLoading(true)
 
         try {
-            // 保存 admin key
+            // Save admin key
             localStorage.setItem('adminKey', adminKey)
 
-            // 使用 statistics API 验证 Admin Key
+            // Verify Admin Key via statistics API
             await statisticsApi.get()
 
-            // 成功则跳转
+            // Redirect on success
             navigate('/')
         } catch (err) {
-            setError('Admin Key 无效或服务器连接失败')
+            setError(t('login.invalidKey'))
             localStorage.removeItem('adminKey')
         } finally {
             setLoading(false)
@@ -38,7 +40,7 @@ export function Login() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-white to-purple-50 relative overflow-hidden">
-            {/* 装饰性背景元素 */}
+            {/* Decorative background elements */}
             <div className="absolute inset-0 opacity-30">
                 <div className="absolute top-10 left-10 w-72 h-72 bg-pink-200 rounded-full filter blur-3xl animate-pulse"></div>
                 <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-200 rounded-full filter blur-3xl animate-pulse animation-delay-2000"></div>
@@ -52,9 +54,9 @@ export function Login() {
                             <span className="text-3xl font-bold text-white">C</span>
                         </div>
                     </div>
-                    <CardTitle className="text-2xl font-bold">欢迎回来</CardTitle>
+                    <CardTitle className="text-2xl font-bold">{t('login.welcomeBack')}</CardTitle>
                     <CardDescription>
-                        输入您的 Admin Key 以访问管理面板
+                        {t('login.subtitle')}
                     </CardDescription>
                 </CardHeader>
                 
@@ -67,7 +69,7 @@ export function Login() {
                                 <Input
                                     id="admin-key"
                                     type="password"
-                                    placeholder="输入您的管理密钥"
+                                    placeholder={t('login.placeholder')}
                                     value={adminKey}
                                     onChange={(e) => setAdminKey(e.target.value)}
                                     className="pl-10"
@@ -90,14 +92,14 @@ export function Login() {
                             disabled={loading || !adminKey.trim()}
                         >
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {loading ? '验证中...' : '登录'}
+                            {loading ? t('login.verifying') : t('login.signIn')}
                         </Button>
                     </CardFooter>
                 </form>
             </Card>
             
             <div className="absolute bottom-4 left-0 right-0 text-center text-sm text-muted-foreground">
-                <p>Clove - 全力以赴的 Claude 反向代理！</p>
+                <p>{t('login.footer')}</p>
             </div>
         </div>
     )

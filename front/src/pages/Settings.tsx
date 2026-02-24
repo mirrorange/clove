@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Key, RefreshCw, Sliders, Globe, Shield, Check, AlertCircle, Loader2, Trash2, Copy, Eye, EyeOff } from 'lucide-react'
 import type { SettingsRead, SettingsUpdate } from '../api/types'
 import { settingsApi } from '../api/client'
@@ -36,6 +37,7 @@ export function Settings() {
     const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set())
     const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set())
     const isMobile = useIsMobile()
+    const { t } = useTranslation()
 
     const loadSettings = async () => {
         try {
@@ -53,7 +55,7 @@ export function Settings() {
         loadSettings()
     }, [])
 
-    // 立即保存函数
+    // Immediate save function
     const saveChanges = useCallback(
         async (changes: SettingsUpdate) => {
             if (Object.keys(changes).length === 0) return
@@ -63,12 +65,12 @@ export function Settings() {
                 await settingsApi.update(changes)
                 setSaveStatus('saved')
 
-                // 更新原始设置以反映已保存的更改
+                // Update original settings to reflect saved changes
                 if (originalSettings && settings) {
                     setOriginalSettings({ ...originalSettings, ...changes })
                 }
 
-                // 3秒后重置状态
+                // Reset status after 3 seconds
                 setTimeout(() => setSaveStatus('idle'), 3000)
             } catch (error) {
                 console.error('Failed to save settings:', error)
@@ -79,22 +81,22 @@ export function Settings() {
         [originalSettings],
     )
 
-    // 更新设置但不保存
+    // Update settings without saving
     const updateSettings = useCallback((newSettings: SettingsRead) => {
         setSettings(newSettings)
     }, [])
 
-    // 处理字段变化并立即保存
+    // Handle field change and save immediately
     const handleFieldChange = useCallback(
         async (newSettings: SettingsRead) => {
             setSettings(newSettings)
 
             if (!originalSettings) return
 
-            // 比较并获取变化的字段
+            // Compare and get changed fields
             const changes: SettingsUpdate = {}
 
-            // 检查每个字段的变化
+            // Check each field for changes
             Object.keys(newSettings).forEach(key => {
                 const typedKey = key as keyof SettingsRead
                 if (JSON.stringify(newSettings[typedKey]) !== JSON.stringify(originalSettings[typedKey])) {
@@ -102,7 +104,7 @@ export function Settings() {
                 }
             })
 
-            // 如果有变化，立即保存
+            // Save immediately if there are changes
             if (Object.keys(changes).length > 0) {
                 await saveChanges(changes)
             }
@@ -177,7 +179,7 @@ export function Settings() {
     const copyKey = async (key: string) => {
         try {
             await navigator.clipboard.writeText(key)
-            toast.success('密钥已复制到剪贴板')
+            toast.success(t('settings.keyCopied'))
 
             setCopiedKeys(prev => new Set(prev).add(key))
             setTimeout(() => {
@@ -188,7 +190,7 @@ export function Settings() {
                 })
             }, 2000)
         } catch (error) {
-            toast.error('复制失败，请手动复制')
+            toast.error(t('settings.copyKeyFailed'))
         }
     }
 
@@ -219,26 +221,26 @@ export function Settings() {
         <div className='space-y-6'>
             <div className='flex items-center justify-between'>
                 <div>
-                    <h1 className='text-3xl font-bold tracking-tight pb-1'>应用设置</h1>
-                    <p className='text-muted-foreground'>管理您的应用程序配置和密钥</p>
+                    <h1 className='text-3xl font-bold tracking-tight pb-1'>{t('settings.title')}</h1>
+                    <p className='text-muted-foreground'>{t('settings.subtitle')}</p>
                 </div>
                 <div className='flex items-center gap-2'>
                     {saveStatus === 'saving' && (
                         <Badge variant='secondary' className='gap-1'>
                             <Loader2 className='h-3 w-3 animate-spin' />
-                            保存中...
+                            {t('common.saving')}
                         </Badge>
                     )}
                     {saveStatus === 'saved' && (
                         <Badge variant='default' className='gap-1 bg-green-500'>
                             <Check className='h-3 w-3' />
-                            已保存
+                            {t('settings.saved')}
                         </Badge>
                     )}
                     {saveStatus === 'error' && (
                         <Badge variant='destructive' className='gap-1'>
                             <AlertCircle className='h-3 w-3' />
-                            保存失败
+                            {t('settings.saveFailed')}
                         </Badge>
                     )}
                 </div>
@@ -249,14 +251,14 @@ export function Settings() {
                 <CardHeader>
                     <CardTitle className='flex items-center gap-2'>
                         <Key className='h-5 w-5' />
-                        API 密钥
+                        {t('settings.apiKeys')}
                     </CardTitle>
-                    <CardDescription>管理您的 API 访问密钥</CardDescription>
+                    <CardDescription>{t('settings.apiKeysDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-4'>
                     {settings.api_keys.length === 0 ? (
                         <Alert>
-                            <AlertDescription>暂无 API 密钥，请添加第一个密钥。</AlertDescription>
+                            <AlertDescription>{t('settings.noApiKeys')}</AlertDescription>
                         </Alert>
                     ) : (
                         <div className='space-y-2'>
@@ -274,7 +276,7 @@ export function Settings() {
                                             size='sm'
                                             onClick={() => toggleKeyVisibility(key)}
                                             className='h-8 w-8 p-0'
-                                            title={visibleKeys.has(key) ? '隐藏密钥' : '显示密钥'}
+                                            title={visibleKeys.has(key) ? t('settings.hideKey') : t('settings.showKey')}
                                         >
                                             {visibleKeys.has(key) ? (
                                                 <EyeOff className='h-4 w-4' />
@@ -287,7 +289,7 @@ export function Settings() {
                                             size='sm'
                                             onClick={() => copyKey(key)}
                                             className='h-8 w-8 p-0'
-                                            title='复制密钥'
+                                            title={t('settings.copyKey')}
                                         >
                                             {copiedKeys.has(key) ? (
                                                 <Check className='h-4 w-4 text-green-500' />
@@ -307,15 +309,15 @@ export function Settings() {
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>确定删除此密钥？</AlertDialogTitle>
+                                                    <AlertDialogTitle>{t('settings.deleteKeyTitle')}</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        此操作无法撤销。删除后使用此密钥的应用将无法访问 API。
+                                                        {t('settings.deleteApiKeyDesc')}
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel>取消</AlertDialogCancel>
+                                                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleRemoveApiKey(key)}>
-                                                        删除
+                                                        {t('common.delete')}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -329,21 +331,21 @@ export function Settings() {
                     <Separator />
 
                     <div className='space-y-2'>
-                        <Label htmlFor='new-api-key'>添加新 API 密钥</Label>
+                        <Label htmlFor='new-api-key'>{t('settings.addNewApiKey')}</Label>
                         <div className='flex flex-wrap gap-2'>
                             <Input
                                 id='new-api-key'
                                 value={newApiKey}
                                 onChange={e => setNewApiKey(e.target.value)}
-                                placeholder='输入或生成新密钥'
+                                placeholder={t('settings.enterOrGenerateKey')}
                                 className='font-mono flex-1 min-w-0'
                             />
                             <div className='flex gap-2'>
-                                <Button variant='outline' size='icon' onClick={() => generateNewKey('api')} title='生成新密钥'>
+                                <Button variant='outline' size='icon' onClick={() => generateNewKey('api')} title={t('settings.generateKey')}>
                                     <RefreshCw className='h-4 w-4' />
                                 </Button>
                                 <Button onClick={handleAddApiKey} disabled={!newApiKey}>
-                                    添加
+                                    {t('common.add')}
                                 </Button>
                             </div>
                         </div>
@@ -356,14 +358,14 @@ export function Settings() {
                 <CardHeader>
                     <CardTitle className='flex items-center gap-2'>
                         <Shield className='h-5 w-5' />
-                        管理员密钥
+                        {t('settings.adminKeys')}
                     </CardTitle>
-                    <CardDescription>管理您的管理员访问密钥</CardDescription>
+                    <CardDescription>{t('settings.adminKeysDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-4'>
                     {settings.admin_api_keys.length === 0 ? (
                         <Alert>
-                            <AlertDescription>暂无管理员密钥，请添加第一个密钥。</AlertDescription>
+                            <AlertDescription>{t('settings.noAdminKeys')}</AlertDescription>
                         </Alert>
                     ) : (
                         <div className='space-y-2'>
@@ -381,7 +383,7 @@ export function Settings() {
                                             size='sm'
                                             onClick={() => toggleKeyVisibility(key)}
                                             className='h-8 w-8 p-0'
-                                            title={visibleKeys.has(key) ? '隐藏密钥' : '显示密钥'}
+                                            title={visibleKeys.has(key) ? t('settings.hideKey') : t('settings.showKey')}
                                         >
                                             {visibleKeys.has(key) ? (
                                                 <EyeOff className='h-4 w-4' />
@@ -394,7 +396,7 @@ export function Settings() {
                                             size='sm'
                                             onClick={() => copyKey(key)}
                                             className='h-8 w-8 p-0'
-                                            title='复制密钥'
+                                            title={t('settings.copyKey')}
                                         >
                                             {copiedKeys.has(key) ? (
                                                 <Check className='h-4 w-4 text-green-500' />
@@ -414,15 +416,15 @@ export function Settings() {
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
-                                                    <AlertDialogTitle>确定删除此密钥？</AlertDialogTitle>
+                                                    <AlertDialogTitle>{t('settings.deleteKeyTitle')}</AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        此操作无法撤销。删除后将无法使用此密钥访问管理面板。
+                                                        {t('settings.deleteAdminKeyDesc')}
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel>取消</AlertDialogCancel>
+                                                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleRemoveAdminKey(key)}>
-                                                        删除
+                                                        {t('common.delete')}
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -436,13 +438,13 @@ export function Settings() {
                     <Separator />
 
                     <div className='space-y-2'>
-                        <Label htmlFor='new-admin-key'>添加新管理员密钥</Label>
+                        <Label htmlFor='new-admin-key'>{t('settings.addNewAdminKey')}</Label>
                         <div className='flex flex-wrap gap-2'>
                             <Input
                                 id='new-admin-key'
                                 value={newAdminKey}
                                 onChange={e => setNewAdminKey(e.target.value)}
-                                placeholder='输入或生成新密钥'
+                                placeholder={t('settings.enterOrGenerateKey')}
                                 className='font-mono flex-1 min-w-0'
                             />
                             <div className='flex gap-2'>
@@ -450,12 +452,12 @@ export function Settings() {
                                     variant='outline'
                                     size='icon'
                                     onClick={() => generateNewKey('admin')}
-                                    title='生成新密钥'
+                                    title={t('settings.generateKey')}
                                 >
                                     <RefreshCw className='h-4 w-4' />
                                 </Button>
                                 <Button onClick={handleAddAdminKey} disabled={!newAdminKey}>
-                                    添加
+                                    {t('common.add')}
                                 </Button>
                             </div>
                         </div>
@@ -468,9 +470,9 @@ export function Settings() {
                 <CardHeader>
                     <CardTitle className='flex items-center gap-2'>
                         <Globe className='h-5 w-5' />
-                        Claude 配置
+                        {t('settings.claudeConfig')}
                     </CardTitle>
-                    <CardDescription>配置 Claude AI 相关设置</CardDescription>
+                    <CardDescription>{t('settings.claudeConfigDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-4'>
                     <div className='grid gap-4 md:grid-cols-2'>
@@ -495,13 +497,13 @@ export function Settings() {
                         </div>
 
                         <div className='space-y-2 md:col-span-2'>
-                            <Label htmlFor='proxy-url'>代理 URL (可选)</Label>
+                            <Label htmlFor='proxy-url'>{t('settings.proxyUrl')}</Label>
                             <Input
                                 id='proxy-url'
                                 value={settings.proxy_url || ''}
                                 onChange={e => updateSettings({ ...settings, proxy_url: e.target.value || null })}
                                 onBlur={() => handleFieldChange(settings)}
-                                placeholder='留空则不使用代理'
+                                placeholder={t('settings.proxyUrlPlaceholder')}
                             />
                         </div>
                     </div>
@@ -513,19 +515,19 @@ export function Settings() {
                 <CardHeader>
                     <CardTitle className='flex items-center gap-2'>
                         <Sliders className='h-5 w-5' />
-                        格式化设置
+                        {t('settings.formatSettings')}
                     </CardTitle>
-                    <CardDescription>自定义上下文格式</CardDescription>
+                    <CardDescription>{t('settings.formatSettingsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-6'>
                     <div className='space-y-2'>
-                        <Label htmlFor='custom-prompt'>自定义提示词 (可选)</Label>
+                        <Label htmlFor='custom-prompt'>{t('settings.customPrompt')}</Label>
                         <Textarea
                             id='custom-prompt'
                             value={settings.custom_prompt || ''}
                             onChange={e => updateSettings({ ...settings, custom_prompt: e.target.value || null })}
                             onBlur={() => handleFieldChange(settings)}
-                            placeholder='输入自定义的系统提示词...'
+                            placeholder={t('settings.customPromptPlaceholder')}
                             className='min-h-[100px]'
                         />
                     </div>
@@ -534,7 +536,7 @@ export function Settings() {
 
                     <div className='grid gap-4 md:grid-cols-3'>
                         <div className='space-y-2'>
-                            <Label htmlFor='human-name'>用户名称</Label>
+                            <Label htmlFor='human-name'>{t('settings.humanName')}</Label>
                             <Input
                                 id='human-name'
                                 value={settings.human_name}
@@ -544,7 +546,7 @@ export function Settings() {
                         </div>
 
                         <div className='space-y-2'>
-                            <Label htmlFor='assistant-name'>助手名称</Label>
+                            <Label htmlFor='assistant-name'>{t('settings.assistantName')}</Label>
                             <Input
                                 id='assistant-name'
                                 value={settings.assistant_name}
@@ -554,7 +556,7 @@ export function Settings() {
                         </div>
 
                         <div className='space-y-2'>
-                            <Label htmlFor='padtxt-length'>Padding 长度</Label>
+                            <Label htmlFor='padtxt-length'>{t('settings.paddingLength')}</Label>
                             <Input
                                 id='padtxt-length'
                                 type='number'
@@ -570,8 +572,8 @@ export function Settings() {
                     <div className='space-y-4'>
                         <div className='flex items-center justify-between'>
                             <div className='space-y-0.5'>
-                                <Label htmlFor='use-real-roles'>使用真实角色</Label>
-                                <p className='text-sm text-muted-foreground'>启用后将使用真实角色前缀</p>
+                                <Label htmlFor='use-real-roles'>{t('settings.useRealRoles')}</Label>
+                                <p className='text-sm text-muted-foreground'>{t('settings.useRealRolesDesc')}</p>
                             </div>
                             <Switch
                                 id='use-real-roles'
@@ -582,8 +584,8 @@ export function Settings() {
 
                         <div className='flex items-center justify-between'>
                             <div className='space-y-0.5'>
-                                <Label htmlFor='allow-external-images'>允许外部图片</Label>
-                                <p className='text-sm text-muted-foreground'>允许反代加载外部图片</p>
+                                <Label htmlFor='allow-external-images'>{t('settings.allowExternalImages')}</Label>
+                                <p className='text-sm text-muted-foreground'>{t('settings.allowExternalImagesDesc')}</p>
                             </div>
                             <Switch
                                 id='allow-external-images'
@@ -594,8 +596,8 @@ export function Settings() {
 
                         <div className='flex items-center justify-between'>
                             <div className='space-y-0.5'>
-                                <Label htmlFor='preserve-chats'>保留聊天记录</Label>
-                                <p className='text-sm text-muted-foreground'>保留聊天历史记录以供后续查看</p>
+                                <Label htmlFor='preserve-chats'>{t('settings.preserveChats')}</Label>
+                                <p className='text-sm text-muted-foreground'>{t('settings.preserveChatsDesc')}</p>
                             </div>
                             <Switch
                                 id='preserve-chats'

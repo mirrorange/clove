@@ -1,4 +1,4 @@
-// 账户相关类型
+// Account types
 export interface OAuthToken {
     access_token: string
     refresh_token: string
@@ -41,7 +41,7 @@ export interface AccountResponse {
     resets_at?: string
 }
 
-// 设置相关类型
+// Settings types
 export interface SettingsRead {
     api_keys: string[]
     admin_api_keys: string[]
@@ -84,7 +84,7 @@ export interface ApiError {
     detail: string
 }
 
-// 统计相关类型
+// Statistics types
 export interface AccountStats {
     total_accounts: number
     valid_accounts: number

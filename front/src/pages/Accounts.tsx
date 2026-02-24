@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
     Plus,
     Pencil,
@@ -49,6 +50,8 @@ export function Accounts() {
     const [accountToDelete, setAccountToDelete] = useState<string | null>(null)
     const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
     const isMobile = useIsMobile()
+    const { t, i18n } = useTranslation()
+    const dateLocale = i18n.language.startsWith('zh') ? 'zh-CN' : 'en-US'
 
     const loadAccounts = async () => {
         try {
@@ -75,7 +78,7 @@ export function Accounts() {
             setAccountToDelete(null)
         } catch (error) {
             console.error('Failed to delete account:', error)
-            alert('删除账户失败')
+            alert(t('accounts.deleteFailed'))
         }
     }
 
@@ -156,11 +159,11 @@ export function Accounts() {
     const getStatusName = (status: string) => {
         switch (status) {
             case 'valid':
-                return '正常'
+                return t('accounts.statusValid')
             case 'invalid':
-                return '无效'
+                return t('accounts.statusInvalid')
             case 'rate_limited':
-                return '限流中'
+                return t('accounts.statusRateLimited')
             default:
                 return status
         }
@@ -221,18 +224,18 @@ export function Accounts() {
                         <CardContent className='pt-0 space-y-3'>
                             <div className='space-y-2 text-sm'>
                                 <div className='flex justify-between'>
-                                    <span className='text-muted-foreground'>最后使用</span>
-                                    <span>{new Date(account.last_used).toLocaleString('zh-CN')}</span>
+                                    <span className='text-muted-foreground'>{t('accounts.lastUsed')}</span>
+                                    <span>{new Date(account.last_used).toLocaleString(dateLocale)}</span>
                                 </div>
                                 <div className='flex justify-between'>
-                                    <span className='text-muted-foreground'>重置时间</span>
-                                    <span>{account.resets_at ? new Date(account.resets_at).toLocaleString('zh-CN') : '-'}</span>
+                                    <span className='text-muted-foreground'>{t('accounts.resetTime')}</span>
+                                    <span>{account.resets_at ? new Date(account.resets_at).toLocaleString(dateLocale) : '-'}</span>
                                 </div>
                             </div>
                             <div className='flex gap-2 pt-2'>
                                 <Button size='sm' variant='outline' className='flex-1' onClick={() => handleEdit(account)}>
                                     <Pencil className='mr-2 h-4 w-4' />
-                                    编辑
+                                    {t('common.edit')}
                                 </Button>
                                 <Button
                                     size='sm'
@@ -244,7 +247,7 @@ export function Accounts() {
                                     }}
                                 >
                                     <Trash2 className='mr-2 h-4 w-4' />
-                                    删除
+                                    {t('common.delete')}
                                 </Button>
                             </div>
                         </CardContent>
@@ -369,21 +372,21 @@ export function Accounts() {
         <div className='space-y-6'>
             <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
                 <div>
-                    <h1 className='text-3xl font-bold tracking-tight pb-1'>账户管理</h1>
-                    <p className='text-muted-foreground'>管理您的 Claude 账户</p>
+                    <h1 className='text-3xl font-bold tracking-tight pb-1'>{t('accounts.title')}</h1>
+                    <p className='text-muted-foreground'>{t('accounts.subtitle')}</p>
                 </div>
                 <div className='flex flex-col sm:flex-row gap-2 w-full sm:w-auto'>
                     <Button onClick={() => setOauthModalOpen(true)} variant='outline' className='w-full sm:w-auto'>
                         <KeyRound className='mr-2 h-4 w-4' />
-                        OAuth 登录
+                        {t('accounts.oauthLogin')}
                     </Button>
                     <Button onClick={() => setBatchModalOpen(true)} variant='outline' className='w-full sm:w-auto'>
                         <FileText className='mr-2 h-4 w-4' />
-                        批量添加
+                        {t('accounts.batchAdd')}
                     </Button>
                     <Button onClick={handleAdd} className='w-full sm:w-auto'>
                         <Plus className='mr-2 h-4 w-4' />
-                        添加 Cookie
+                        {t('accounts.addCookie')}
                     </Button>
                 </div>
             </div>
@@ -394,20 +397,20 @@ export function Accounts() {
                         <div className='rounded-full bg-muted p-6 mb-4'>
                             <Users className='h-12 w-12 text-muted-foreground' />
                         </div>
-                        <h3 className='text-lg font-semibold mb-2'>暂无账户</h3>
-                        <p className='text-muted-foreground mb-4 text-center'>点击"添加 Cookie"或"OAuth 登录"创建第一个账户</p>
+                        <h3 className='text-lg font-semibold mb-2'>{t('accounts.noAccounts')}</h3>
+                        <p className='text-muted-foreground mb-4 text-center'>{t('accounts.noAccountsDesc')}</p>
                         <div className='flex flex-col sm:flex-row gap-2'>
                             <Button onClick={() => setOauthModalOpen(true)} variant='outline'>
                                 <KeyRound className='mr-2 h-4 w-4' />
-                                OAuth 登录
+                                {t('accounts.oauthLogin')}
                             </Button>
                             <Button onClick={() => setBatchModalOpen(true)} variant='outline'>
                                 <FileText className='mr-2 h-4 w-4' />
-                                批量添加
+                                {t('accounts.batchAdd')}
                             </Button>
                             <Button onClick={handleAdd}>
                                 <Plus className='mr-2 h-4 w-4' />
-                                添加 Cookie
+                                {t('accounts.addCookie')}
                             </Button>
                         </div>
                     </CardContent>
@@ -419,12 +422,12 @@ export function Accounts() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Organization UUID</TableHead>
-                                    <TableHead>认证方式</TableHead>
-                                    <TableHead>状态</TableHead>
-                                    <TableHead>账户类型</TableHead>
-                                    <TableHead>最后使用</TableHead>
-                                    <TableHead>重置时间</TableHead>
-                                    <TableHead className='text-right'>操作</TableHead>
+                                    <TableHead>{t('accounts.authMethod')}</TableHead>
+                                    <TableHead>{t('accounts.status')}</TableHead>
+                                    <TableHead>{t('accounts.accountType')}</TableHead>
+                                    <TableHead>{t('accounts.lastUsed')}</TableHead>
+                                    <TableHead>{t('accounts.resetTime')}</TableHead>
+                                    <TableHead className='text-right'>{t('accounts.actions')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -447,23 +450,23 @@ export function Accounts() {
                                             <AccountTypeBadge account={account} />
                                         </TableCell>
                                         <TableCell className='text-sm'>
-                                            {new Date(account.last_used).toLocaleString('zh-CN')}
+                                            {new Date(account.last_used).toLocaleString(dateLocale)}
                                         </TableCell>
                                         <TableCell className='text-sm'>
-                                            {account.resets_at ? new Date(account.resets_at).toLocaleString('zh-CN') : '-'}
+                                            {account.resets_at ? new Date(account.resets_at).toLocaleString(dateLocale) : '-'}
                                         </TableCell>
                                         <TableCell className='text-right'>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
-                                                        <span className='sr-only'>打开菜单</span>
+                                                        <span className='sr-only'>{t('accounts.openMenu')}</span>
                                                         <MoreHorizontal className='h-4 w-4' />
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align='end'>
                                                     <DropdownMenuItem onClick={() => handleEdit(account)}>
                                                         <Pencil className='mr-2 h-4 w-4' />
-                                                        编辑
+                                                        {t('common.edit')}
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         onClick={() => {
@@ -473,7 +476,7 @@ export function Accounts() {
                                                         className='text-destructive'
                                                     >
                                                         <Trash2 className='mr-2 h-4 w-4' />
-                                                        删除
+                                                        {t('common.delete')}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -495,18 +498,18 @@ export function Accounts() {
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>确定要删除这个账户吗？</AlertDialogTitle>
+                        <AlertDialogTitle>{t('accounts.deleteConfirmTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            此操作无法撤销。删除后该账户将从 Clove 中移除，但不会影响您在 Claude.ai 中的数据。
+                            {t('accounts.deleteConfirmDesc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
                         >
-                            删除
+                            {t('common.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

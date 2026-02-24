@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react'
 import type { AccountResponse, AccountCreate, AccountUpdate } from '../api/types'
 import { accountsApi } from '../api/client'
@@ -29,6 +30,7 @@ interface AccountModalProps {
 }
 
 export function AccountModal({ account, onClose }: AccountModalProps) {
+    const { t } = useTranslation()
     const [formData, setFormData] = useState({
         cookie_value: '',
         organization_uuid: '',
@@ -115,7 +117,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
 
         try {
             if (account) {
-                // 更新账户
+                // Update account
                 const updateData: AccountUpdate = {}
 
                 if (formData.cookie_value && formData.cookie_value !== account.cookie_value) {
@@ -133,7 +135,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
 
                 await accountsApi.update(account.organization_uuid, updateData)
             } else {
-                // 创建新账户
+                // Create new account
                 const createData: AccountCreate = {}
 
                 if (formData.cookie_value) {
@@ -166,17 +168,17 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
         <AlertDialog open={showCookieAlert} onOpenChange={setShowCookieAlert}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Cookie 格式警告</AlertDialogTitle>
+                    <AlertDialogTitle>{t('accountModal.cookieWarningTitle')}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        检测到您输入的 Cookie 格式可能不正确。标准格式应包含 "sessionKey=sk-ant-sid01-" 开头。
+                        {t('accountModal.cookieWarningDesc')}
                         <br />
                         <br />
-                        如果您使用的是反向代理或自定义配置，可以忽略此警告继续提交。
+                        {t('accountModal.cookieWarningNote')}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleCookieAlertConfirm}>仍然提交</AlertDialogAction>
+                    <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCookieAlertConfirm}>{t('accountModal.submitAnyway')}</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -191,7 +193,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                     </Label>
                     <Textarea
                         id='cookie_value'
-                        placeholder='粘贴您的 Claude Cookie...'
+                        placeholder={t('accountModal.cookiePlaceholder')}
                         value={formData.cookie_value}
                         onChange={e => setFormData({ ...formData, cookie_value: e.target.value })}
                         className='min-h-[100px] font-mono text-sm break-all'
@@ -202,7 +204,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                 <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
                     <CollapsibleTrigger asChild>
                         <Button variant='outline' type='button' className='w-full justify-between'>
-                            <span>高级选项</span>
+                            <span>{t('accountModal.advancedOptions')}</span>
                             {showAdvanced ? <ChevronUp className='h-4 w-4' /> : <ChevronDown className='h-4 w-4' />}
                         </Button>
                     </CollapsibleTrigger>
@@ -212,14 +214,14 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                                 <Label htmlFor='organization_uuid'>Organization UUID</Label>
                                 <Input
                                     id='organization_uuid'
-                                    placeholder='留空自动获取'
+                                    placeholder={t('accountModal.orgUuidPlaceholder')}
                                     value={formData.organization_uuid}
                                     onChange={e => {
                                         const value = e.target.value
                                         setFormData({ ...formData, organization_uuid: value })
                                         const formatted = formatUUID(value)
                                         if (formatted && !isValidUUID(formatted)) {
-                                            setUuidError('请输入有效的 UUID 格式')
+                                            setUuidError(t('accountModal.invalidUuid'))
                                         } else {
                                             setUuidError('')
                                         }
@@ -236,13 +238,13 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                         )}
 
                         <div className='space-y-2'>
-                            <Label htmlFor='accountType'>账户类型</Label>
+                            <Label htmlFor='accountType'>{t('accountModal.accountType')}</Label>
                             <Select value={accountType} onValueChange={value => setAccountType(value as any)}>
                                 <SelectTrigger className='w-full' id='accountType'>
-                                    <SelectValue placeholder='选择账户类型' />
+                                    <SelectValue placeholder={t('accountModal.selectAccountType')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value='none'>未选择</SelectItem>
+                                    <SelectItem value='none'>{t('accountModal.notSelected')}</SelectItem>
                                     <SelectItem value='Free'>Free</SelectItem>
                                     <SelectItem value='Pro'>Pro</SelectItem>
                                     <SelectItem value='Max'>Max</SelectItem>
@@ -252,22 +254,22 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
 
                         {account && account.auth_type === 'both' && (
                             <div className='space-y-2'>
-                                <Label htmlFor='preferredAuth'>首选认证方式</Label>
+                                <Label htmlFor='preferredAuth'>{t('accountModal.preferredAuth')}</Label>
                                 <Select
                                     value={formData.preferred_auth}
                                     onValueChange={value => setFormData({ ...formData, preferred_auth: value as any })}
                                 >
                                     <SelectTrigger className='w-full' id='preferredAuth'>
-                                        <SelectValue placeholder='选择首选认证方式' />
+                                        <SelectValue placeholder={t('accountModal.selectPreferredAuth')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value='auto'>自动（优先 OAuth）</SelectItem>
-                                        <SelectItem value='oauth'>仅 OAuth</SelectItem>
-                                        <SelectItem value='web'>仅 Web（Cookie）</SelectItem>
+                                        <SelectItem value='auto'>{t('accountModal.authAuto')}</SelectItem>
+                                        <SelectItem value='oauth'>{t('accountModal.authOAuthOnly')}</SelectItem>
+                                        <SelectItem value='web'>{t('accountModal.authWebOnly')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className='text-xs text-muted-foreground'>
-                                    当账户同时拥有 Cookie 和 OAuth 时，选择优先使用的认证方式
+                                    {t('accountModal.preferredAuthDesc')}
                                 </p>
                             </div>
                         )}
@@ -280,7 +282,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
     const footerContent = (
         <>
             <Button type='button' variant='outline' onClick={onClose}>
-                取消
+                {t('common.cancel')}
             </Button>
             <Button
                 type='submit'
@@ -291,7 +293,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                 }
             >
                 {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                {loading ? '保存中...' : '保存'}
+                {loading ? t('common.saving') : t('common.save')}
             </Button>
         </>
     )
@@ -307,9 +309,9 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                     <DialogContent className='sm:max-w-[600px]'>
                         <form onSubmit={handleSubmitForm}>
                             <DialogHeader>
-                                <DialogTitle>{account ? '编辑账户' : '添加 Cookie'}</DialogTitle>
+                                <DialogTitle>{account ? t('accountModal.titleEdit') : t('accountModal.titleAdd')}</DialogTitle>
                                 <DialogDescription>
-                                    {account ? '更新账户的认证信息' : '添加新的 Claude 账户 Cookie'}
+                                    {account ? t('accountModal.descEdit') : t('accountModal.descAdd')}
                                 </DialogDescription>
                             </DialogHeader>
                             {formContent}
@@ -328,9 +330,9 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                 <DrawerContent>
                     <form onSubmit={handleSubmitForm} className='max-h-[90vh] overflow-auto'>
                         <DrawerHeader>
-                            <DrawerTitle>{account ? '编辑账户' : '添加 Cookie'}</DrawerTitle>
+                            <DrawerTitle>{account ? t('accountModal.titleEdit') : t('accountModal.titleAdd')}</DrawerTitle>
                             <DrawerDescription>
-                                {account ? '更新账户的认证信息' : '添加新的 Claude 账户 Cookie'}
+                                {account ? t('accountModal.descEdit') : t('accountModal.descAdd')}
                             </DrawerDescription>
                         </DrawerHeader>
                         <div className='px-4'>{formContent}</div>

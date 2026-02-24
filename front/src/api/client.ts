@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { toast } from 'sonner'
+import i18n from '../i18n/i18n-config'
 import type {
     AccountResponse,
     AccountCreate,
@@ -16,7 +17,7 @@ const api = axios.create({
     },
 })
 
-// 添加请求拦截器以添加 admin key
+// Request interceptor to attach admin key from local storage
 api.interceptors.request.use(config => {
     const adminKey = localStorage.getItem('adminKey')
     if (adminKey) {
@@ -25,11 +26,11 @@ api.interceptors.request.use(config => {
     return config
 })
 
-// 添加响应拦截器以处理全局错误
+// Response interceptor to handle global errors
 api.interceptors.response.use(
     response => response,
     error => {
-        // 处理登录失效
+        // Handle session expiry - redirect to login
         if (error.response?.data?.detail?.code === 401011) {
             localStorage.removeItem('adminKey')
             if (window.location.pathname !== '/login') {
@@ -38,17 +39,17 @@ api.interceptors.response.use(
             return Promise.reject(error)
         }
 
-        // 尝试获取错误响应中的 detail.message
-        const errorMessage = error.response?.data?.detail?.message || '发生未知错误'
+        // Attempt to extract error message from detail.message field
+        const errorMessage = error.response?.data?.detail?.message || i18n.t('common.unknownError')
 
         toast.error(errorMessage)
 
-        // 继续抛出错误，以便组件层可以进一步处理
+        // Re-throw error so component layer can handle it further
         return Promise.reject(error)
     },
 )
 
-// 账户相关 API
+// Account-related API
 export const accountsApi = {
     list: () => api.get<AccountResponse[]>('/api/admin/accounts'),
     get: (organizationUuid: string) => api.get<AccountResponse>(`/api/admin/accounts/${organizationUuid}`),
@@ -60,18 +61,18 @@ export const accountsApi = {
         api.post<AccountResponse>('/api/admin/accounts/oauth/exchange', exchangeData),
 }
 
-// 设置相关 API
+// Settings-related API
 export const settingsApi = {
     get: () => api.get<SettingsRead>('/api/admin/settings'),
     update: (settings: SettingsUpdate) => api.put<SettingsUpdate>('/api/admin/settings', settings),
 }
 
-// 健康检查
+// Health check
 export const healthApi = {
     check: () => api.get('/health'),
 }
 
-// 统计信息 API
+// Statistics API
 export const statisticsApi = {
     get: () => api.get<StatisticsResponse>('/api/admin/statistics'),
 }
