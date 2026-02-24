@@ -4,7 +4,7 @@ from app.core.http_client import (
     create_session,
 )
 from datetime import datetime, timedelta, UTC
-from typing import Dict
+from typing import Dict, Optional
 from loguru import logger
 from fastapi.responses import StreamingResponse
 
@@ -13,6 +13,8 @@ from app.processors.base import BaseProcessor
 from app.processors.claude_ai import ClaudeAIContext
 from app.services.account import account_manager
 from app.services.cache import cache_service
+from app.services.oauth import oauth_authenticator
+from app.core.account import Account
 from app.core.exceptions import (
     ClaudeHttpError,
     ClaudeRateLimitedError,
@@ -92,21 +94,10 @@ class ClaudeAPIProcessor(BaseProcessor):
                 request_json = context.messages_api_request.model_dump_json(
                     exclude_none=True
                 )
-                headers = self._prepare_headers(
-                    account.oauth_token.access_token,
-                    context.messages_api_request,
-                    context.original_request,
-                )
 
-                session = create_session(
-                    proxy=settings.proxy_url,
-                    timeout=settings.request_timeout,
-                    impersonate="chrome",
-                    follow_redirects=False,
-                )
-
-                response = await self._request_messages_api(
-                    session, request_json, headers
+                # Try the request, with one retry on 401 authentication error
+                response, session = await self._execute_api_request_with_retry(
+                    account, request_json, context
                 )
 
                 resets_at = response.headers.get("anthropic-ratelimit-unified-reset")
@@ -119,44 +110,6 @@ class ClaudeAPIProcessor(BaseProcessor):
                             f"Invalid resets_at format from Claude API: {resets_at}"
                         )
                         account.resets_at = None
-
-                # Handle rate limiting
-                if response.status_code == 429:
-                    next_hour = datetime.now(UTC).replace(
-                        minute=0, second=0, microsecond=0
-                    ) + timedelta(hours=1)
-                    raise ClaudeRateLimitedError(
-                        resets_at=account.resets_at or next_hour
-                    )
-
-                if response.status_code >= 400:
-                    error_data = await response.json()
-
-                    if (
-                        response.status_code == 400
-                        and error_data.get("error", {}).get("message")
-                        == "system: Invalid model name"
-                    ):
-                        raise InvalidModelNameError(context.messages_api_request.model)
-
-                    if (
-                        response.status_code == 401
-                        and error_data.get("error", {}).get("message")
-                        == "OAuth authentication is currently not allowed for this organization."
-                    ):
-                        raise OAuthAuthenticationNotAllowedError()
-
-                    logger.error(
-                        f"Claude API error: {response.status_code} - {error_data}"
-                    )
-                    raise ClaudeHttpError(
-                        url=self.messages_api_url,
-                        status_code=response.status_code,
-                        error_type=error_data.get("error", {}).get("type", "unknown"),
-                        error_message=error_data.get("error", {}).get(
-                            "message", "Unknown error"
-                        ),
-                    )
 
                 async def stream_response():
                     async for chunk in response.aiter_bytes():
@@ -191,6 +144,121 @@ class ClaudeAPIProcessor(BaseProcessor):
             logger.debug("No accounts available for Claude API, continuing pipeline")
 
         return context
+
+    async def _execute_api_request_with_retry(
+        self,
+        account: Account,
+        request_json: str,
+        context: ClaudeAIContext,
+    ) -> tuple[Response, AsyncSession]:
+        """
+        Execute API request with retry on 401 authentication error.
+        
+        If a 401 error occurs with "Invalid authentication credentials",
+        try to re-authenticate using the cookie and retry once.
+        """
+        retried = False
+
+        while True:
+            headers = self._prepare_headers(
+                account.oauth_token.access_token,
+                context.messages_api_request,
+                context.original_request,
+            )
+
+            session = create_session(
+                proxy=settings.proxy_url,
+                timeout=settings.request_timeout,
+                impersonate="chrome",
+                follow_redirects=False,
+            )
+
+            response = await self._request_messages_api(session, request_json, headers)
+
+            # Handle rate limiting
+            if response.status_code == 429:
+                await session.close()
+                next_hour = datetime.now(UTC).replace(
+                    minute=0, second=0, microsecond=0
+                ) + timedelta(hours=1)
+                resets_at = response.headers.get("anthropic-ratelimit-unified-reset")
+                if resets_at:
+                    try:
+                        resets_at_dt = datetime.fromtimestamp(int(resets_at), tz=UTC)
+                    except ValueError:
+                        resets_at_dt = next_hour
+                else:
+                    resets_at_dt = next_hour
+                raise ClaudeRateLimitedError(resets_at=resets_at_dt)
+
+            if response.status_code >= 400:
+                error_data = await response.json()
+                await session.close()
+
+                if (
+                    response.status_code == 400
+                    and error_data.get("error", {}).get("message")
+                    == "system: Invalid model name"
+                ):
+                    raise InvalidModelNameError(context.messages_api_request.model)
+
+                if (
+                    response.status_code == 401
+                    and error_data.get("error", {}).get("message")
+                    == "OAuth authentication is currently not allowed for this organization."
+                ):
+                    raise OAuthAuthenticationNotAllowedError()
+
+                # Handle 401 authentication_error - try re-auth with cookie
+                if (
+                    response.status_code == 401
+                    and error_data.get("error", {}).get("type") == "authentication_error"
+                    and not retried
+                    and account.cookie_value
+                ):
+                    logger.warning(
+                        f"401 authentication error for account {account.organization_uuid[:8]}..., "
+                        "attempting re-authentication with cookie"
+                    )
+                    
+                    success = await self._try_reauthenticate_account(account)
+                    if success:
+                        logger.info(
+                            f"Re-authentication successful for account {account.organization_uuid[:8]}..., retrying request"
+                        )
+                        retried = True
+                        continue
+                    else:
+                        logger.error(
+                            f"Re-authentication failed for account {account.organization_uuid[:8]}..."
+                        )
+
+                logger.error(
+                    f"Claude API error: {response.status_code} - {error_data}"
+                )
+                raise ClaudeHttpError(
+                    url=self.messages_api_url,
+                    status_code=response.status_code,
+                    error_type=error_data.get("error", {}).get("type", "unknown"),
+                    error_message=error_data.get("error", {}).get(
+                        "message", "Unknown error"
+                    ),
+                )
+
+            # Success
+            return response, session
+
+    async def _try_reauthenticate_account(self, account: Account) -> bool:
+        """
+        Try to re-authenticate an account using its cookie.
+        Returns True if successful, False otherwise.
+        """
+        try:
+            success = await oauth_authenticator.authenticate_account(account)
+            return success
+        except Exception as e:
+            logger.error(f"Re-authentication error: {e}")
+            return False
 
     def _insert_system_message(self, context: ClaudeAIContext) -> None:
         """Insert system message into the request."""

@@ -10,7 +10,7 @@ import uuid
 
 from app.core.config import settings
 from app.core.exceptions import NoAccountsAvailableError
-from app.core.account import Account, AccountStatus, AuthType, OAuthToken
+from app.core.account import Account, AccountStatus, AuthType, OAuthToken, PreferredAuthMethod
 from app.services.oauth import oauth_authenticator
 
 
@@ -187,6 +187,10 @@ class AccountManager:
             if account.auth_type not in [AuthType.BOTH, AuthType.COOKIE_ONLY]:
                 continue
 
+            # Skip if user prefers OAuth only
+            if account.preferred_auth == PreferredAuthMethod.OAUTH:
+                continue
+
             # Filter by capabilities if specified
             if is_pro is not None and account.is_pro != is_pro:
                 continue
@@ -246,6 +250,10 @@ class AccountManager:
                 continue
 
             if account.auth_type not in [AuthType.OAUTH_ONLY, AuthType.BOTH]:
+                continue
+
+            # Skip if user prefers Web (Cookie) only
+            if account.preferred_auth == PreferredAuthMethod.WEB:
                 continue
 
             # Filter by capabilities if specified

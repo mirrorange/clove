@@ -7,7 +7,7 @@ import time
 from app.core.exceptions import OAuthExchangeError
 from app.dependencies.auth import AdminAuthDep
 from app.services.account import account_manager
-from app.core.account import AuthType, AccountStatus, OAuthToken
+from app.core.account import AuthType, AccountStatus, OAuthToken, PreferredAuthMethod
 from app.services.oauth import oauth_authenticator
 
 
@@ -29,6 +29,7 @@ class AccountUpdate(BaseModel):
     oauth_token: Optional[OAuthTokenCreate] = None
     capabilities: Optional[List[str]] = None
     status: Optional[AccountStatus] = None
+    preferred_auth: Optional[PreferredAuthMethod] = None
 
 
 class OAuthCodeExchange(BaseModel):
@@ -44,6 +45,7 @@ class AccountResponse(BaseModel):
     cookie_value: Optional[str] = Field(None, description="Masked cookie value")
     status: AccountStatus
     auth_type: AuthType
+    preferred_auth: PreferredAuthMethod
     is_pro: bool
     is_max: bool
     has_oauth: bool
@@ -69,6 +71,7 @@ async def list_accounts(_: AdminAuthDep):
                 else None,
                 status=account.status,
                 auth_type=account.auth_type,
+                preferred_auth=account.preferred_auth,
                 is_pro=account.is_pro,
                 is_max=account.is_max,
                 has_oauth=account.oauth_token is not None,
@@ -96,6 +99,7 @@ async def get_account(organization_uuid: str, _: AdminAuthDep):
         else None,
         status=account.status,
         auth_type=account.auth_type,
+        preferred_auth=account.preferred_auth,
         is_pro=account.is_pro,
         is_max=account.is_max,
         has_oauth=account.oauth_token is not None,
@@ -130,6 +134,7 @@ async def create_account(account_data: AccountCreate, _: AdminAuthDep):
         else None,
         status=account.status,
         auth_type=account.auth_type,
+        preferred_auth=account.preferred_auth,
         is_pro=account.is_pro,
         is_max=account.is_max,
         has_oauth=account.oauth_token is not None,
@@ -182,6 +187,9 @@ async def update_account(
         if account.status == AccountStatus.VALID:
             account.resets_at = None
 
+    if account_data.preferred_auth is not None:
+        account.preferred_auth = account_data.preferred_auth
+
     # Save changes
     account_manager.save_accounts()
 
@@ -193,6 +201,7 @@ async def update_account(
         else None,
         status=account.status,
         auth_type=account.auth_type,
+        preferred_auth=account.preferred_auth,
         is_pro=account.is_pro,
         is_max=account.is_max,
         has_oauth=account.oauth_token is not None,
@@ -243,6 +252,7 @@ async def exchange_oauth_code(exchange_data: OAuthCodeExchange, _: AdminAuthDep)
         cookie_value=None,
         status=account.status,
         auth_type=account.auth_type,
+        preferred_auth=account.preferred_auth,
         is_pro=account.is_pro,
         is_max=account.is_max,
         has_oauth=True,

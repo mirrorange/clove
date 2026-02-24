@@ -23,6 +23,13 @@ class AuthType(str, Enum):
     BOTH = "both"
 
 
+class PreferredAuthMethod(str, Enum):
+    """User preference for authentication method when account has both Cookie and OAuth."""
+    AUTO = "auto"  # Default: prioritize OAuth if available
+    OAUTH = "oauth"  # Force OAuth only
+    WEB = "web"  # Force Web (Cookie) only
+
+
 @dataclass
 class OAuthToken:
     """Encapsulates OAuth credentials for an account."""
@@ -59,12 +66,14 @@ class Account:
         cookie_value: Optional[str] = None,
         oauth_token: Optional[OAuthToken] = None,
         auth_type: AuthType = AuthType.COOKIE_ONLY,
+        preferred_auth: PreferredAuthMethod = PreferredAuthMethod.AUTO,
     ):
         self.organization_uuid = organization_uuid
         self.capabilities = capabilities
         self.cookie_value = cookie_value
         self.status = AccountStatus.VALID
         self.auth_type = auth_type
+        self.preferred_auth = preferred_auth
         self.last_used = datetime.now()
         self.resets_at: Optional[datetime] = None
         self.oauth_token: Optional[OAuthToken] = oauth_token
@@ -119,6 +128,7 @@ class Account:
             "cookie_value": self.cookie_value,
             "status": self.status.value,
             "auth_type": self.auth_type.value,
+            "preferred_auth": self.preferred_auth.value,
             "last_used": self.last_used.isoformat(),
             "resets_at": self.resets_at.isoformat() if self.resets_at else None,
             "oauth_token": self.oauth_token.to_dict() if self.oauth_token else None,
@@ -132,6 +142,7 @@ class Account:
             capabilities=data.get("capabilities"),
             cookie_value=data.get("cookie_value"),
             auth_type=AuthType(data["auth_type"]),
+            preferred_auth=PreferredAuthMethod(data.get("preferred_auth", "auto")),
         )
         account.status = AccountStatus(data["status"])
         account.last_used = datetime.fromisoformat(data["last_used"])

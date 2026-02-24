@@ -33,6 +33,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
         cookie_value: '',
         organization_uuid: '',
         capabilities: [] as string[],
+        preferred_auth: 'auto' as 'auto' | 'oauth' | 'web',
     })
     const [accountType, setAccountType] = useState<'none' | 'Free' | 'Pro' | 'Max'>('none')
     const [loading, setLoading] = useState(false)
@@ -47,6 +48,7 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                 cookie_value: '',
                 organization_uuid: account.organization_uuid,
                 capabilities: account.capabilities || [],
+                preferred_auth: account.preferred_auth || 'auto',
             })
 
             const caps = account.capabilities || []
@@ -122,6 +124,11 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
 
                 if (capabilities) {
                     updateData.capabilities = capabilities
+                }
+
+                // Update preferred_auth if changed
+                if (formData.preferred_auth !== account.preferred_auth) {
+                    updateData.preferred_auth = formData.preferred_auth
                 }
 
                 await accountsApi.update(account.organization_uuid, updateData)
@@ -242,6 +249,28 @@ export function AccountModal({ account, onClose }: AccountModalProps) {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {account && account.auth_type === 'both' && (
+                            <div className='space-y-2'>
+                                <Label htmlFor='preferredAuth'>首选认证方式</Label>
+                                <Select
+                                    value={formData.preferred_auth}
+                                    onValueChange={value => setFormData({ ...formData, preferred_auth: value as any })}
+                                >
+                                    <SelectTrigger className='w-full' id='preferredAuth'>
+                                        <SelectValue placeholder='选择首选认证方式' />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value='auto'>自动（优先 OAuth）</SelectItem>
+                                        <SelectItem value='oauth'>仅 OAuth</SelectItem>
+                                        <SelectItem value='web'>仅 Web（Cookie）</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className='text-xs text-muted-foreground'>
+                                    当账户同时拥有 Cookie 和 OAuth 时，选择优先使用的认证方式
+                                </p>
+                            </div>
+                        )}
                     </CollapsibleContent>
                 </Collapsible>
             </div>
