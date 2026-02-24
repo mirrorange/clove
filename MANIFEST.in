@@ -1,0 +1,27 @@
+# Include all static files
+recursive-include app/static *
+
+# Include locale files
+recursive-include app/locales *.json
+
+# Include documentation
+include README.md
+include LICENSE
+
+# Exclude development files
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+global-exclude *.log
+global-exclude *.tmp
+global-exclude .git*
+
+# Exclude test files
+recursive-exclude tests *
+recursive-exclude * test_*
+
+# Exclude frontend source
+recursive-exclude front *
+
+# Exclude data directory
+recursive-exclude data *

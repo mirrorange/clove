@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  clove:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clove
+    restart: unless-stopped
+    ports:
+      - "5201:5201"
+    volumes:
+      - ./data:/data
+    environment:
+      # Server configuration
+      - HOST=0.0.0.0
+      - PORT=5201
+
+      # Data storage
+      - DATA_FOLDER=/data
+
+      # API Keys (comma-separated)
+      # - API_KEYS=your-api-key-1,your-api-key-2
+      # - ADMIN_API_KEYS=your-admin-key-1,your-admin-key-2
+
+      # Claude cookies (comma-separated)
+      # - COOKIES=your-claude-cookie-1,your-claude-cookie-2
+
+      # Proxy configuration (optional)
+      # - PROXY_URL=http://proxy-server:port
+
+      # Claude URLs (optional, defaults are usually fine)
+      # - CLAUDE_AI_URL=https://claude.ai
+      # - CLAUDE_API_BASEURL=https://api.anthropic.com
+
+      # Logging
+      - LOG_LEVEL=INFO
+      - LOG_TO_FILE=true
+      - LOG_FILE_PATH=/data/logs/app.log
+
+volumes:
+  data:
+    driver: local

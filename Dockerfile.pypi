@@ -1,0 +1,21 @@
+# Simplified Dockerfile for Clove - Install from PyPI
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install clove-proxy from PyPI
+RUN pip install --no-cache-dir "clove-proxy[rnet]"
+
+# Create data directory
+RUN mkdir -p /data
+
+# Environment variables
+ENV DATA_FOLDER=/data
+ENV HOST=0.0.0.0
+ENV PORT=${PORT:-5201}
+
+# Expose port
+EXPOSE ${PORT:-5201}
+
+# Run the application using the installed script
+CMD ["clove"]

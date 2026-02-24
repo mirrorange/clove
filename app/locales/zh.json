@@ -1,0 +1,38 @@
+{
+  "global": {
+    "internalServerError": "服务器内部错误。请稍后重试。",
+    "noAPIKeyProvided": "未提供 API 密钥。请在请求中包含 API 密钥。",
+    "invalidAPIKey": "无效的 API 密钥。请检查您的 API 密钥并重试。"
+  },
+  "accountManager": {
+    "noAccountsAvailable": "当前没有可用的账户。请稍后重试。"
+  },
+  "oauthService": {
+    "oauthExchangeError": "无法将授权代码兑换为令牌：{reason}",
+    "organizationInfoError": "无法获取组织信息：{reason}",
+    "cookieAuthorizationError": "无法使用 Cookie 进行授权：{reason}",
+    "oauthAuthenticationNotAllowed": "此组织不允许 OAuth 认证。仅有 Pro 和 Max 账户支持 OAuth 认证。"
+  },
+  "claudeClient": {
+    "claudeRateLimited": "Claude API 速率限制已超出。请在 {resets_at} 后重试。",
+    "cloudflareBlocked": "请求被 Cloudflare 阻止。请检查您的连接。",
+    "organizationDisabled": "您的 Claude AI 账户已被禁用。",
+    "httpError": "请求 Claude AI 时发生 HTTP 错误：{error_type} - {error_message}（状态码：{status_code}）",
+    "invalidModelName": "提供的模型名称无效。请确保您有权访问 {model_name} 模型。",
+    "authenticationError": "身份验证错误。请检查您的 Claude Cookie 或 OAuth 凭证；并确保安装了 curl 依赖且不在 Termux 环境下。"
+  },
+  "messageProcessor": {
+    "noValidMessages": "请求中未找到有效消息。",
+    "externalImageDownloadError": "无法从以下地址下载外部图片：{url}",
+    "externalImageNotAllowed": "不允许使用外部图片：{url}"
+  },
+  "pipeline": {
+    "noResponse": "未收到服务响应。请重试。"
+  },
+  "processors": {
+    "nonStreamingResponseProcessor": {
+      "streamingError": "流式传输中收到错误：{error_type} - {error_message}",
+      "noMessage": "响应中未收到消息。"
+    }
+  }
+}

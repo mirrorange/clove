@@ -1,0 +1,18 @@
+# Simplified Dockerfile for Clove - For Huggingface Spaces
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install clove-proxy from PyPI
+RUN pip install --no-cache-dir "clove-proxy[rnet]"
+
+# Environment variables
+ENV NO_FILESYSTEM_MODE=true
+ENV HOST=0.0.0.0
+ENV PORT=${PORT:-7860}
+
+# Expose port
+EXPOSE ${PORT:-7860}
+
+# Run the application using the installed script
+CMD ["clove"]

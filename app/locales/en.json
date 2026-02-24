@@ -1,0 +1,38 @@
+{
+  "global": {
+    "internalServerError": "An internal server error occurred. Please try again later.",
+    "noAPIKeyProvided": "No API key provided. Please include an API key in the request.",
+    "invalidAPIKey": "Invalid API key. Please check your API key and try again."
+  },
+  "accountManager": {
+    "noAccountsAvailable": "No accounts are currently available. Please try again later."
+  },
+  "oauthService": {
+    "oauthExchangeError": "Failed to exchange authorization code for tokens.",
+    "organizationInfoError": "Failed to get organization Info: {reason}",
+    "cookieAuthorizationError": "Failed to authorize with cookie: {reason}",
+    "oauthAuthenticationNotAllowed": "OAuth authentication is not allowed for this organization. Only Pro and Max accounts support OAuth authentication."
+  },
+  "claudeClient": {
+    "claudeRateLimited": "Claude AI rate limit exceeded. Please try again after {resets_at}.",
+    "cloudflareBlocked": "Request blocked by Cloudflare. Please check your IP address.",
+    "organizationDisabled": "Your Claude AI account has been disabled.",
+    "httpError": "HTTP error occurred when calling Claude AI: {error_type} - {error_message} (Status: {status_code})",
+    "invalidModelName": "Invalid model name provided. Please ensure you have access to model {model_name}.",
+    "authenticationError": "Authentication error. Please check your Claude Cookie or OAuth credentials, and ensure you have installed the curl dependency and are not in a Termux environment."
+  },
+  "messageProcessor": {
+    "noValidMessages": "No valid messages found in the request.",
+    "externalImageDownloadError": "Failed to download external image from: {url}",
+    "externalImageNotAllowed": "External images are not allowed: {url}"
+  },
+  "pipeline": {
+    "noResponse": "No response received from the service. Please try again."
+  },
+  "processors": {
+    "nonStreamingResponseProcessor": {
+      "streamingError": "Streaming error occurred: {error_type} - {error_message}",
+      "noMessage": "No message received in the response."
+    }
+  }
+}

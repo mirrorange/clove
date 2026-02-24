@@ -1,0 +1,77 @@
+[project]
+name = "clove-proxy"
+version = "0.3.1"
+description = "A Claude.ai reverse proxy"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "mirrorange", email = "orange@freesia.ink"},
+]
+keywords = ["claude", "ai", "proxy", "fastapi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "fastapi>=0.115.14",
+    "httpx>=0.28.1",
+    "json5>=0.12.0",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "tenacity>=9.1.2",
+    "tiktoken>=0.9.0",
+    "uvicorn>=0.35.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mirrorange/clove"
+"Bug Tracker" = "https://github.com/mirrorange/clove/issues"
+"Documentation" = "https://github.com/mirrorange/clove#readme"
+
+[project.scripts]
+clove = "app.main:main"
+
+[project.optional-dependencies]
+curl = [
+    "curl-cffi>=0.11.4",
+]
+rnet = [
+    "rnet>=3.0.0rc14",
+]
+dev = [
+    "build>=1.0.0",
+    "ruff>=0.12.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = [
+    "app/**/*",
+    "README.md",
+    "LICENSE",
+]
+exclude = [
+    "app/**/__pycache__",
+    "app/**/*.pyc",
+    "app/**/*.pyo",
+    "app/**/test_*.py",
+    "app/**/*_test.py",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"app/static" = "app/static"
+"app/locales" = "app/locales"
