@@ -95,6 +95,7 @@ class ClaudeAPIProcessor(BaseProcessor):
                 headers = self._prepare_headers(
                     account.oauth_token.access_token,
                     context.messages_api_request,
+                    context.original_request,
                 )
 
                 session = create_session(
@@ -216,18 +217,28 @@ class ClaudeAPIProcessor(BaseProcessor):
             request.system = [system_message]
 
     def _prepare_headers(
-        self, access_token: str, request: MessagesAPIRequest
+        self,
+        access_token: str,
+        request: MessagesAPIRequest,
+        original_request=None,
     ) -> Dict[str, str]:
-        """Prepare headers for Claude API request."""
+        """Prepare headers for Claude API request.
+
+        Beta headers: oauth 是 OAuth 认证必需的。
+        effort 和 structured-outputs 已 GA，不再需要 beta header。
+        客户端的 anthropic-beta header 会被透传（去重合并）。
+        """
+        # oauth beta 是 OAuth 认证必需的
         beta_features = ["oauth-2025-04-20"]
 
-        # Add effort beta header if output_config is present
-        if request.output_config:
-            beta_features.append("effort-2025-11-24")
-
-        # Add structured outputs beta header if output_format is present
-        if request.output_format:
-            beta_features.append("structured-outputs-2025-11-13")
+        # 透传客户端 anthropic-beta header，与内部 beta 去重合并
+        if original_request:
+            client_beta = original_request.headers.get("anthropic-beta", "")
+            if client_beta:
+                for beta in client_beta.split(","):
+                    beta = beta.strip()
+                    if beta and beta not in beta_features:
+                        beta_features.append(beta)
 
         return {
             "Authorization": f"Bearer {access_token}",

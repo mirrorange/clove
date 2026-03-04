@@ -102,7 +102,7 @@ class ClaudeWebProcessor(BaseProcessor):
                 if (
                     context.claude_session.account.is_pro
                     and request.thinking
-                    and request.thinking.type == "enabled"
+                    and request.thinking.type in ("enabled", "adaptive")
                 )
                 else None
             )
