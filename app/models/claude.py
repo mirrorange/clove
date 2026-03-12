@@ -141,11 +141,19 @@ class ToolChoice(BaseModel):
     disable_parallel_tool_use: Optional[bool] = None
 
 
+class CustomToolSpec(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    description: Optional[str] = None
+    input_schema: Optional[Any] = None
+
+
 class Tool(BaseModel):
     model_config = ConfigDict(extra="allow")
-    name: str
-    input_schema: Any
+    type: Optional[str] = None
+    name: Optional[str] = None
+    input_schema: Optional[Any] = None
     description: Optional[str] = None
+    custom: Optional[CustomToolSpec] = None
 
 
 class OutputConfig(BaseModel):
