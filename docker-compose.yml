@@ -12,6 +12,9 @@ services:
     volumes:
       - ./data:/data
     environment:
+      # Timezone
+      - TZ=Asia/Shanghai
+
       # Server configuration
       - HOST=0.0.0.0
       - PORT=5201
