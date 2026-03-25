@@ -5,7 +5,7 @@ import time
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse, parse_qs
 
-from app.core.http_client import Response, create_session
+from app.core.http_client import Response, create_session, create_plain_session
 from loguru import logger
 
 from app.core.config import settings
@@ -53,6 +53,7 @@ class OAuthAuthenticator:
         }
 
     async def _request(self, method: str, url: str, **kwargs) -> Response:
+        """Browser-impersonating request — for claude.ai endpoints (Cloudflare)."""
         session = create_session(
             timeout=settings.request_timeout,
             impersonate="chrome",
@@ -76,6 +77,38 @@ class OAuthAuthenticator:
                 error_message="Error occurred during request to Claude.ai",
             )
 
+        return response
+
+    async def _token_request(self, url: str, data: dict) -> Response:
+        """Plain (non-impersonating) POST to the OAuth token endpoint.
+
+        console.anthropic.com/v1/oauth/token rejects requests that carry
+        browser fingerprinting headers (User-Agent, Origin, TLS JA3).
+        Using httpx here avoids the 429.
+        """
+        session = create_plain_session(
+            timeout=settings.request_timeout,
+            proxy=settings.proxy_url,
+            follow_redirects=False,
+        )
+        async with session:
+            response: Response = await session.request(
+                method="POST",
+                url=url,
+                data=data,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "claude-cli/2.1.81 (external, cli)",
+                },
+            )
+        if response.status_code != 200:
+            try:
+                error_body = await response.json()
+            except Exception:
+                error_body = "<non-JSON body>"
+            logger.error(
+                f"Token endpoint returned {response.status_code}: {error_body}"
+            )
         return response
 
     async def get_organization_info(self, cookie: str) -> Tuple[str, List[str]]:
@@ -209,12 +242,7 @@ class OAuthAuthenticator:
             data["state"] = state
 
         try:
-            response = await self._request(
-                "POST",
-                settings.oauth_token_url,
-                json=data,
-                headers={"Content-Type": "application/json"},
-            )
+            response = await self._token_request(settings.oauth_token_url, data)
 
             token_data = await response.json()
 
@@ -244,12 +272,7 @@ class OAuthAuthenticator:
         }
 
         try:
-            response = await self._request(
-                "POST",
-                settings.oauth_token_url,
-                json=data,
-                headers={"Content-Type": "application/json"},
-            )
+            response = await self._token_request(settings.oauth_token_url, data)
 
             if response.status_code != 200:
                 logger.error(f"Token refresh failed: {response.status_code}")
