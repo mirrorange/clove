@@ -129,8 +129,7 @@ When Clove uses web proxy, Claude.ai adds extra system prompts and file upload s
 
 - You can predict which method your request will use. With default settings:
   - Free accounts: All requests go through Claude.ai web proxy
-  - Pro accounts: Sonnet models use Claude API, Opus models use Claude.ai web proxy
-  - Max accounts: All requests use Claude API
+  - Pro/Max accounts: All requests use Claude API
   - With multiple accounts, Clove always prioritizes accounts with API access for the requested model
 - Choose prompts compatible with your request method
 
